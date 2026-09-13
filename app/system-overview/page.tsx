@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Chart from 'chart.js/auto';
 
@@ -8,6 +8,10 @@ export default function SystemOverview() {
   const churnChartRef = useRef<HTMLCanvasElement | null>(null);
   const trainingChartRef = useRef<HTMLCanvasElement | null>(null);
   const sourcesChartRef = useRef<HTMLCanvasElement | null>(null);
+
+  // State สำหรับเปิด-ปิด Popover
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isEmailOpen, setIsEmailOpen] = useState(false);
 
   useEffect(() => {
     let churnChart: Chart | null = null;
@@ -127,7 +131,7 @@ export default function SystemOverview() {
               <span className="text-white font-extrabold">1MOBY</span>
             </div>
             
-            {/* Navigation Menu (ลบลิงก์ Account ซ้ำซ้อนออกแล้ว) */}
+            {/* Navigation Menu */}
             <nav className="space-y-2">
               <Link href="/system-overview" className="flex items-center gap-3 bg-white/20 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition">
                 <i className="fa-solid fa-house text-xs"></i> System Overview
@@ -144,7 +148,7 @@ export default function SystemOverview() {
             </nav>
           </div>
 
-          {/* User Profile Card - ปุ่มกดไปหน้า Account หลักจุดเดียวด้านล่าง */}
+          {/* User Profile Card */}
           <Link 
             href="/account" 
             className="bg-[#1034a6]/30 p-3 rounded-2xl flex items-center justify-between border border-white/5 transition hover:bg-[#1034a6]/50 active:scale-[0.98]"
@@ -165,7 +169,7 @@ export default function SystemOverview() {
 
         {/* === MAIN CONTENT AREA === */}
         <main className="flex-1 flex flex-col overflow-y-auto">
-          <header className="bg-white px-8 py-3 flex items-center justify-between border-b border-gray-100 shrink-0">
+          <header className="bg-white px-8 py-3 flex items-center justify-between border-b border-gray-100 shrink-0 relative z-30">
             <div className="relative w-96">
               <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input type="text" placeholder="Search system..." className="w-full bg-[#f1f5f9] text-gray-700 pl-11 pr-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -175,13 +179,136 @@ export default function SystemOverview() {
               <div className="flex items-center gap-1.5 bg-[#e2f9ec] text-[#22c55e] px-3 py-1 rounded-full text-xs font-bold tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span> ONLINE
               </div>
-              <button className="text-gray-400 hover:text-gray-600">
-                <i className="fa-solid fa-bell text-lg"></i>
-              </button>
-              <button className="text-gray-400 hover:text-gray-600 relative">
-                <i className="fa-solid fa-envelope text-lg"></i>
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+
+              {/* ===== NOTIFICATION BUTTON & POPOVER ===== */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setIsNotificationOpen(!isNotificationOpen);
+                    setIsEmailOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition cursor-pointer relative p-1"
+                >
+                  <i className="fa-solid fa-bell text-lg"></i>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                {/* Notifications Popover Dropdown */}
+                {isNotificationOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 text-xs z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <h4 className="font-bold text-gray-900 mb-3 text-sm">Notifications</h4>
+                    
+                    <div className="space-y-3.5 max-h-80 overflow-y-auto pr-1">
+                      {/* Alert Item 1: Critical */}
+                      <div className="flex items-start gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 mt-1"></span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 leading-tight">
+                            [CRITICAL] 14:10:01
+                          </p>
+                          <p className="text-gray-600 text-[11px] mt-0.5">Model Re-training Failed</p>
+                          <p className="text-gray-500 text-[11px] italic">"Model Configuration error detected"</p>
+                          <p className="text-gray-400 text-[10px] mt-1 font-medium">1 Min ago</p>
+                        </div>
+                      </div>
+
+                      {/* Alert Item 2: Info */}
+                      <div className="flex items-start gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0 mt-1"></span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 leading-tight">
+                            [INFO] 14:10:01
+                          </p>
+                          <p className="text-gray-600 text-[11px] mt-0.5">New Data Sync Successful</p>
+                          <p className="text-gray-500 text-[11px] italic">"1.2M records updated from CRM"</p>
+                          <p className="text-gray-400 text-[10px] mt-1 font-medium">1h ago</p>
+                        </div>
+                      </div>
+
+                      {/* Alert Item 3: Warning */}
+                      <div className="flex items-start gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0 mt-1"></span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 leading-tight">
+                            [WARNING] 09:15:32
+                          </p>
+                          <p className="text-gray-600 text-[11px] mt-0.5">CPU Usage reached 90%</p>
+                          <p className="text-gray-400 text-[10px] mt-1 font-medium">5h ago</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ===== EMAIL MESSAGES BUTTON & POPOVER ===== */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setIsEmailOpen(!isEmailOpen);
+                    setIsNotificationOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition cursor-pointer relative p-1"
+                >
+                  <i className="fa-solid fa-envelope text-lg"></i>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                {/* Email Messages Popover Dropdown */}
+                {isEmailOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 text-xs z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-gray-900 text-sm">Email Messages</h4>
+                      <a 
+                        href="https://mail.google.com" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-blue-600 hover:underline text-[11px] font-medium flex items-center gap-1"
+                      >
+                        Open Gmail <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                      </a>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                      {/* Email Item 1 */}
+                      <div className="p-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <span className="font-bold text-gray-800 text-[12px]">IT Support Team</span>
+                          <span className="text-gray-400 text-[10px]">10:30 AM</span>
+                        </div>
+                        <p className="font-semibold text-gray-700 text-[11px] truncate">Weekly Model Training Status</p>
+                        <p className="text-gray-400 text-[10px] truncate mt-0.5">
+                          The scheduled model training pipeline has completed with 92.5% accuracy...
+                        </p>
+                      </div>
+
+                      {/* Email Item 2 */}
+                      <div className="p-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <span className="font-bold text-gray-800 text-[12px]">Alex Rivera</span>
+                          <span className="text-gray-400 text-[10px]">Yesterday</span>
+                        </div>
+                        <p className="font-semibold text-gray-700 text-[11px] truncate">Data Drift Warning on Batch_01</p>
+                        <p className="text-gray-400 text-[10px] truncate mt-0.5">
+                          Please check the latest feature distribution for customer segment B...
+                        </p>
+                      </div>
+
+                      {/* Email Item 3 */}
+                      <div className="p-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <span className="font-bold text-gray-800 text-[12px]">System Administrator</span>
+                          <span className="text-gray-400 text-[10px]">2 days ago</span>
+                        </div>
+                        <p className="font-semibold text-gray-700 text-[11px] truncate">Scheduled Infrastructure Maintenance</p>
+                        <p className="text-gray-400 text-[10px] truncate mt-0.5">
+                          Servers will undergo maintenance this Sunday from 02:00 UTC to 04:00 UTC...
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               {/* รูปโปรไฟล์หัวมุมขวาบนกดไปหน้า Account */}
               <Link href="/account" className="transition hover:opacity-85">

@@ -1,7 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+
+interface NotificationItem {
+  id: string;
+  type: 'CRITICAL' | 'INFO' | 'WARNING';
+  time: string;
+  title: string;
+  description: string;
+  ago: string;
+}
+
+interface EmailNotificationItem {
+  id: string;
+  senderName: string;
+  senderEmail: string;
+  subject: string;
+  snippet: string;
+  time: string;
+  gmailUrl: string;
+}
 
 export default function ModelConfiguration() {
   const [algorithm, setAlgorithm] = useState('Auto-Select (Best Precision)');
@@ -14,6 +33,13 @@ export default function ModelConfiguration() {
   // State 2: ค่า Churn Risk Threshold (0.0 ถึง 1.0)
   const [threshold, setThreshold] = useState(0.35);
 
+  // State สำหรับควบคุมการเปิด-ปิด System Notifications & Email Dropdowns
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isEmailOpen, setIsEmailOpen] = useState(false);
+
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const emailRef = useRef<HTMLDivElement>(null);
+
   const activityLogs = [
     { timestamp: '2026-06-14 14:15', action: 'MODEL_TUNING', target: 'Learning Rate', status: 'SUCCESS' },
     { timestamp: '2026-06-14 11:20', action: 'TOGGLE_SWITCH', target: 'Automated Retraining', status: 'SUCCESS' },
@@ -21,6 +47,81 @@ export default function ModelConfiguration() {
     { timestamp: '2026-06-12 14:15', action: 'MODEL_SYNC', target: 'Batch_Customer_01', status: 'FAIL (Retry)' },
     { timestamp: '2026-06-11 14:15', action: 'MODEL_TUNING', target: 'Learning Rate', status: 'SUCCESS' },
   ];
+
+  // รายการ System Notification
+  const notifications: NotificationItem[] = [
+    {
+      id: '1',
+      type: 'CRITICAL',
+      time: '14:10:01',
+      title: 'Model Re-training Failed',
+      description: '"Model Configuration error detected"',
+      ago: '1 Min ago',
+    },
+    {
+      id: '2',
+      type: 'INFO',
+      time: '14:10:01',
+      title: 'New Data Sync Successful',
+      description: '"1.2M records updated from CRM"',
+      ago: '1h ago',
+    },
+    {
+      id: '3',
+      type: 'WARNING',
+      time: '09:15:32',
+      title: 'CPU Usage reached 90%',
+      description: '',
+      ago: '5h ago',
+    },
+  ];
+
+  // รายการ Email Notification พร้อมลิงก์ตรงไปยัง Gmail
+  const emailNotifications: EmailNotificationItem[] = [
+    {
+      id: 'e1',
+      senderName: 'IT Support Team',
+      senderEmail: 'support@company.com',
+      subject: 'Weekly Model Training Status',
+      snippet: 'The scheduled model training pipeline has completed with 92.5% accuracy...',
+      time: '10:30 AM',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox',
+    },
+    {
+      id: 'e2',
+      senderName: 'Alex Rivera',
+      senderEmail: 'alex.r@company.com',
+      subject: 'Data Drift Warning on Batch_01',
+      snippet: 'Please check the latest feature distribution for customer segment B...',
+      time: 'Yesterday',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox',
+    },
+    {
+      id: 'e3',
+      senderName: 'System Administrator',
+      senderEmail: 'admin@company.com',
+      subject: 'Scheduled Infrastructure Maintenance',
+      snippet: 'Servers will undergo maintenance this Sunday from 02:00 UTC to 04:00 UTC...',
+      time: '2 days ago',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox',
+    },
+  ];
+
+  // ปิด Dropdown เมื่อคลิกภายนอก
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
+      if (emailRef.current && !emailRef.current.contains(event.target as Node)) {
+        setIsEmailOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -71,7 +172,7 @@ export default function ModelConfiguration() {
 
         {/* === MAIN CONTENT === */}
         <main className="flex-1 flex flex-col overflow-y-auto">
-          <header className="bg-white px-8 py-3 flex items-center justify-between border-b border-gray-100 shrink-0">
+          <header className="bg-white px-8 py-3 flex items-center justify-between border-b border-gray-100 shrink-0 relative z-30">
             <div className="relative w-96">
               <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input type="text" placeholder="Search system..." className="w-full bg-[#f1f5f9] text-gray-700 pl-11 pr-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -81,13 +182,99 @@ export default function ModelConfiguration() {
               <div className="flex items-center gap-1.5 bg-[#e2f9ec] text-[#22c55e] px-3 py-1 rounded-full text-xs font-bold tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span> ONLINE
               </div>
-              <button className="text-gray-400 hover:text-gray-600">
-                <i className="fa-solid fa-bell text-lg"></i>
-              </button>
-              <button className="text-gray-400 hover:text-gray-600 relative">
-                <i className="fa-solid fa-envelope text-lg"></i>
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+
+              {/* SYSTEM NOTIFICATIONS DROPDOWN */}
+              <div className="relative" ref={notificationRef}>
+                <button 
+                  onClick={() => {
+                    setIsNotificationOpen(!isNotificationOpen);
+                    setIsEmailOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 relative cursor-pointer pt-1"
+                >
+                  <i className="fa-solid fa-bell text-lg"></i>
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                {isNotificationOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-3xl shadow-xl border border-gray-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <h3 className="text-base font-extrabold text-gray-900 mb-4">Notifications</h3>
+
+                    <div className="space-y-4">
+                      {notifications.map((item) => (
+                        <div key={item.id} className="flex items-start gap-3 text-xs">
+                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${
+                            item.type === 'CRITICAL' ? 'bg-red-500' :
+                            item.type === 'INFO' ? 'bg-emerald-500' : 'bg-amber-400'
+                          }`} />
+
+                          <div className="space-y-0.5">
+                            <p className="font-bold text-gray-900 leading-tight">
+                              [{item.type}] <span className="font-semibold text-gray-700">{item.time}</span>
+                            </p>
+                            <p className="text-gray-600 font-medium">{item.title}</p>
+                            {item.description && (
+                              <p className="text-gray-400 italic">{item.description}</p>
+                            )}
+                            <p className="text-gray-400 pt-0.5">{item.ago}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* EMAIL NOTIFICATIONS DROPDOWN */}
+              <div className="relative" ref={emailRef}>
+                <button 
+                  onClick={() => {
+                    setIsEmailOpen(!isEmailOpen);
+                    setIsNotificationOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 relative cursor-pointer pt-1"
+                >
+                  <i className="fa-solid fa-envelope text-lg"></i>
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                {isEmailOpen && (
+                  <div className="absolute right-0 mt-3 w-88 bg-white rounded-3xl shadow-xl border border-gray-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-extrabold text-gray-900">Email Messages</h3>
+                      <a 
+                        href="https://mail.google.com" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1"
+                      >
+                        Open Gmail <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                      </a>
+                    </div>
+
+                    <div className="space-y-3">
+                      {emailNotifications.map((mail) => (
+                        <a
+                          key={mail.id}
+                          href={mail.gmailUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block p-3 rounded-2xl hover:bg-blue-50/60 transition border border-gray-50 group cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition">
+                              {mail.senderName}
+                            </span>
+                            <span className="text-[10px] text-gray-400">{mail.time}</span>
+                          </div>
+                          <p className="text-xs font-semibold text-gray-700 truncate">{mail.subject}</p>
+                          <p className="text-[11px] text-gray-400 truncate mt-0.5">{mail.snippet}</p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <Link href="/account">
                 <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="User" className="w-8 h-8 rounded-full object-cover" />
@@ -159,7 +346,7 @@ export default function ModelConfiguration() {
                 </div>
               </div>
 
-              {/* [จุดแก้ที่ 1] Churn Risk Threshold Slider แบบขยับตามการลาก 100% */}
+              {/* Churn Risk Threshold Slider */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-bold text-gray-800">Churn Risk Threshold</h3>
@@ -170,10 +357,8 @@ export default function ModelConfiguration() {
 
                 <div className="space-y-1.5 my-auto">
                   <div className="relative w-full h-7 flex items-center">
-                    {/* Background Bar (Gradient) */}
                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-3 rounded-full bg-gradient-to-r from-green-400 via-amber-400 to-orange-400 pointer-events-none" />
 
-                    {/* Dynamic Circle Thumb (หัวลูกศรขยับตามค่า threshold) */}
                     <div 
                       className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-2 border-[#1e4fcb] rounded-full shadow-md pointer-events-none z-10 transition-none"
                       style={{ 
@@ -182,7 +367,6 @@ export default function ModelConfiguration() {
                       }}
                     />
 
-                    {/* Invisible Interactive Range Input */}
                     <input 
                       type="range"
                       min="0"
@@ -251,7 +435,6 @@ export default function ModelConfiguration() {
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
                   <h3 className="text-sm font-bold text-gray-800">Model Training</h3>
                   
-                  {/* [จุดแก้ที่ 2] Automated Retraining Toggle Switch กดเปิด/ปิดได้จริง */}
                   <div className="flex items-center justify-between py-1">
                     <span className="text-xs font-semibold text-gray-700">Automated Retraining</span>
                     
@@ -272,7 +455,7 @@ export default function ModelConfiguration() {
                     </button>
                   </div>
 
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase shadow-sm transition">
+                  <button className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase shadow-sm transition cursor-pointer">
                     Save Configuration
                   </button>
                 </div>
