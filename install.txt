@@ -1,0 +1,11 @@
+เปิด Terminal cd my-app แล้วกด Enter
+npm install recharts
+npm install chart.js
+npm install lucide-react
+npm install jspdf jspdf-autotable sweetalert2
+npm run dev แล้วกด Enter
+ 
+
+กด Network
+
+**ยกเลิก Terminal กด Ctrl+c**
